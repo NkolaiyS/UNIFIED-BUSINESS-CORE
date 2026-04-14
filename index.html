@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title class="sys-term" data-term="pageTitle">СИСТЕМА УПРАВЛЕНИЯ | MONOLITH</title>
+    <title id="page-title">СИСТЕМА УПРАВЛЕНИЯ | MONOLITH</title>
     
     <link rel="icon" type="image/png" href="favicon.png">
     
@@ -375,9 +375,39 @@
 </head>
 <body>
 
+<script>
+    const CORE_CONFIG = {
+        meta: {
+            brandName: "UNIFIED BUSINESS CORE",
+            password: "Админ", 
+            pageTitle: "СИСТЕМА УПРАВЛЕНИЯ | MONOLITH"
+        },
+        terms: {
+            unitName: "Локация", 
+            productName: "Услуга"
+        },
+        dictionaries: {
+            units: [
+                "Локация 1", 
+                "Локация 2"
+            ],
+            sources: [
+                "Источник 1", "Источник 2", "Источник 3", "Рекомендации", "Архивная база", "Сайт"
+            ],
+            products: [
+                "Тестовая услуга", "Депозит", "Услуга 1", "Услуга 2", "Услуга 3", 
+                "Пакет 8", "Пакет 12", "Пакет 16", "Пакет 24", "Пакет 32", "Пакет 64"
+            ],
+            expenses: [
+                "Реклама (Онлайн)", "Реклама (Офлайн)", "Логистика", "Хоз. расходы", "Аренда", "Зарплата"
+            ]
+        }
+    };
+</script>
+
 <div id="auth">
     <img src="favicon.png" alt="Логотип" style="width: 80px; height: 80px; margin-bottom: 20px; object-fit: contain;">
-    <h1 class="sys-term" data-term="brandName" style="font-size: 48px; margin-bottom: 10px; letter-spacing: 8px;">MONOLITH</h1>
+    <h1 id="brand-title" style="font-size: 48px; margin-bottom: 10px; letter-spacing: 8px; text-align: center;">MONOLITH</h1>
     <p style="color: var(--text-dim); margin-bottom: 40px; text-transform: uppercase; font-size: 12px; letter-spacing: 2px;">Юнит-Экономика / Управление</p>
     <input type="password" id="pass" placeholder="Кодовое слово" style="text-align: center; max-width: 320px;">
     <button class="btn" style="max-width: 320px;" onclick="unlockSystem()">ОТКРЫТЬ СИСТЕМУ</button>
@@ -406,7 +436,7 @@
     </div>
     <div id="vera-chat" style="flex: 1; padding: 20px; overflow-y: auto; font-size: 14px;">
         <div style="background: #fff; padding: 15px; border-radius: 15px; border: var(--glass-border); margin-bottom: 15px;">
-            Система инициализирована. Базы данных подключены. Жду команд.
+            Николай Сергеевич, здравия желаю! Все системы оцифрованы. Жду команд.
         </div>
     </div>
     <div style="padding: 15px; background: #fff; display: flex; gap: 10px;">
@@ -497,7 +527,7 @@
             <div class="funnel-bar">
                 <div class="funnel-fill" id="bar-bookings" style="background: rgba(166, 138, 86, 0.6); width: 0%;"></div>
                 <div class="funnel-text">
-                    <span>2. ЗАПИСИ (CR1: <span id="cr-bookings">0</span>%)</span>
+                    <span>2. ЗАЯВКИ (CR1: <span id="cr-bookings">0</span>%)</span>
                     <span id="f-bookings">0</span>
                 </div>
             </div>
@@ -535,14 +565,14 @@
     <div class="card">
         <label>Календарь (Выбор даты)</label>
         <input type="date" id="in-date">
-        <label class="sys-term" data-term="unitName">Подразделение</label>
+        <label id="lbl-loc">Подразделение</label>
         <select id="in-loc">
             <option value="">-- ВЫБРАТЬ ПОДРАЗДЕЛЕНИЕ --</option>
             </select>
     </div>
 
     <div class="card" style="border-left: 5px solid var(--accent);">
-        <h3 class="serif" style="margin-bottom: 15px;">Трафик и Записи</h3>
+        <h3 class="serif" style="margin-bottom: 15px;">Трафик и Заявки</h3>
         <label>Источник лидов</label>
         <select id="l-src">
             <option value="">-- ВЫБРАТЬ ИСТОЧНИК --</option>
@@ -553,7 +583,7 @@
                 <input type="number" id="l-qty" placeholder="0">
             </div>
             <div>
-                <label>Записано</label>
+                <label>Заявок / Записей</label>
                 <input type="number" id="b-qty" placeholder="0">
             </div>
         </div>
@@ -565,16 +595,16 @@
         <label>Статус Клиента</label>
         <select id="s-cat">
             <option value="">-- ВЫБРАТЬ СТАТУС --</option>
-            <option value="trial">Целевое действие (Доходимость/Тест)</option>
+            <option value="trial">Целевое действие (Доходимость/Проба)</option>
             <option value="prim">Первичная покупка (Новый клиент)</option>
-            <option value="sec">Вторичная покупка (Продление/Повтор)</option>
+            <option value="sec">Вторичная покупка (Продление)</option>
         </select>
-        <label class="sys-term" data-term="productName">Номенклатура</label>
+        <label id="lbl-type">Номенклатура</label>
         <select id="s-type">
             <option value="">-- ВЫБРАТЬ НОМЕНКЛАТУРУ --</option>
             </select>
         <label>Фактическая сумма оплаты (₽)</label>
-        <input type="number" id="s-val" placeholder="0">
+        <input type="number" id="s-val" placeholder="Например: 11200">
         <button class="btn" onclick="addSale(this)">Зафиксировать продажу</button>
     </div>
 
@@ -602,9 +632,9 @@
     
     <div class="card">
         <h3 class="serif" style="margin-bottom: 15px;">Установка KPI (Плана)</h3>
-        <label class="sys-term" data-term="unitName">Целевое Подразделение</label>
+        <label id="lbl-plan-loc">Целевое Подразделение</label>
         <select id="plan-studio" onchange="updatePlanProgress()">
-            <option value="all">Все (Общий план)</option>
+            <option value="all">Все подразделения (Общий план)</option>
             </select>
         <label>План по Выручке (₽)</label>
         <input type="number" id="plan-rev-input" placeholder="Например: 1000000">
@@ -643,40 +673,6 @@
 </div>
 
 <script>
-    // === ЯДРО УНИВЕРСАЛИЗАЦИИ (CORE_CONFIG) ===
-    const CORE_CONFIG = {
-        meta: {
-            brandName: "РЕСУРС", // Замените на бренд клиента (напр., "AVTO-PRO")
-            pageTitle: "СИСТЕМА УПРАВЛЕНИЯ | MONOLITH",
-            password: "Ресурс-студия" // Системный пароль
-        },
-        terms: {
-            unitName: "Студия",     // Для автосервиса: "Техцентр", для салона красоты: "Салон"
-            productName: "Абонемент" // Для автосервиса: "Услуга/Деталь", для салона: "Процедура"
-        },
-        dictionaries: {
-            // Названия филиалов/локаций
-            units: [
-                "Советская 3", 
-                "Коммунистическая 77/2"
-            ],
-            // Откуда приходят клиенты
-            sources: [
-                "ВК", "2ГИС", "Яндекс", "Подруги / Рекомендации", "Архив / Старая база", "Одноклассники", "Сайт"
-            ],
-            // Что продаем
-            products: [
-                "Пробное занятие", "Депозит (Бронь)", "Персональное занятие", "Подписка 3 зан/нед",
-                "Тест драйв 3 зан на 10 дней", "Безлимит на месяц", "8 занятий", "12 занятий",
-                "16 занятий", "24 занятия", "32 занятия", "48 занятий", "64 занятия", "96 занятий", "128 занятий"
-            ],
-            // На что тратим деньги
-            expenses: [
-                "Реклама (ВК)", "Реклама (Яндекс)", "Такси / Логистика", "Хознужды / Вода", "Аренда / Кредит", "ЗП / Авансы"
-            ]
-        }
-    };
-
     // === НАСТРОЙКИ ОБЛАКА ===
     const BACKEND_URL = "https://functions.yandexcloud.net/d4esie0g5hb62gg515a9";
     const BACKEND_TOKEN = "Resurs_studio-2026"; 
@@ -693,57 +689,59 @@
         marketingSpend: 0,
         totalExpenses: 0, 
         dailyRevenue: {}, 
-        leadsBySource: {}, // Инициализируется динамически в applyCoreConfig
+        leadsBySource: {}, 
         salesBySku: {},
         plans: {
             'all': { rev: 0, leads: 0 }
-        } // Инициализируется динамически в applyCoreConfig
+        }
     };
 
-    let rawServerData = null;
+    let rawServerData = null; // Хранилище сырых данных из БД
     let revenueChartInstance;
     let channelsChartInstance;
     let skuChartInstance;
 
-    // --- ФУНКЦИЯ ПРИМЕНЕНИЯ КОНФИГА ---
+    // --- ФУНКЦИЯ ПРИМЕНЕНИЯ CORE_CONFIG ---
     function applyCoreConfig() {
-        // Замена текста интерфейса
-        document.querySelectorAll('.sys-term').forEach(el => {
-            const key = el.getAttribute('data-term');
-            if (CORE_CONFIG.terms[key]) el.innerHTML = CORE_CONFIG.terms[key];
-            if (CORE_CONFIG.meta[key]) el.innerHTML = CORE_CONFIG.meta[key];
-            if (el.tagName === 'TITLE') document.title = el.innerHTML;
-        });
+        // Подмена текста
+        document.title = CORE_CONFIG.meta.pageTitle;
+        document.getElementById('brand-title').innerText = CORE_CONFIG.meta.brandName;
+        document.getElementById('lbl-loc').innerText = CORE_CONFIG.terms.unitName;
+        document.getElementById('lbl-plan-loc').innerText = "Целевая " + CORE_CONFIG.terms.unitName;
+        document.getElementById('lbl-type').innerText = CORE_CONFIG.terms.productName;
 
-        // Заполнение выпадающих списков
-        const appendOptions = (id, arr) => {
-            const sel = document.getElementById(id);
-            if (!sel) return;
-            arr.forEach(item => {
-                sel.insertAdjacentHTML('beforeend', `<option value="${item}">${item}</option>`);
+        // Функция для заполнения <select>
+        const populateSelect = (elementId, dataArray) => {
+            const select = document.getElementById(elementId);
+            if (!select) return;
+            dataArray.forEach(item => {
+                const opt = document.createElement('option');
+                opt.value = item;
+                opt.innerHTML = item;
+                select.appendChild(opt);
             });
         };
 
-        appendOptions('dash-studio-filter', CORE_CONFIG.dictionaries.units);
-        appendOptions('plan-studio', CORE_CONFIG.dictionaries.units);
-        appendOptions('in-loc', CORE_CONFIG.dictionaries.units);
-        appendOptions('l-src', CORE_CONFIG.dictionaries.sources);
-        appendOptions('s-type', CORE_CONFIG.dictionaries.products);
-        appendOptions('e-cat', CORE_CONFIG.dictionaries.expenses);
+        populateSelect('dash-studio-filter', CORE_CONFIG.dictionaries.units);
+        populateSelect('in-loc', CORE_CONFIG.dictionaries.units);
+        populateSelect('plan-studio', CORE_CONFIG.dictionaries.units);
+        populateSelect('l-src', CORE_CONFIG.dictionaries.sources);
+        populateSelect('s-type', CORE_CONFIG.dictionaries.products);
+        populateSelect('e-cat', CORE_CONFIG.dictionaries.expenses);
 
-        // Динамическое создание структуры данных для планов и трафика
-        CORE_CONFIG.dictionaries.units.forEach(unit => {
-            if (!appData.plans[unit]) appData.plans[unit] = { rev: 0, leads: 0 };
-        });
-        
+        // Инициализация структур данных на основе словарей
         CORE_CONFIG.dictionaries.sources.forEach(src => {
             appData.leadsBySource[src] = 0;
+        });
+
+        CORE_CONFIG.dictionaries.units.forEach(unit => {
+            appData.plans[unit] = { rev: 0, leads: 0 };
         });
     }
 
     // --- ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ---
     window.onload = function() {
-        applyCoreConfig(); // Инициализируем словари перед стартом
+        applyCoreConfig();
 
         if (localStorage.getItem('resurs_auth') === 'true') {
             document.getElementById('auth').style.display = 'none';
@@ -754,9 +752,9 @@
             // Восстановление планов из памяти браузера
             const savedPlans = localStorage.getItem('resurs_plans');
             if (savedPlans) {
-                // Мержим сохраненные планы с базовой структурой, чтобы не потерять новые студии при изменении конфига
-                const parsed = JSON.parse(savedPlans);
-                appData.plans = { ...appData.plans, ...parsed };
+                // Мержим, чтобы не стереть новые локации из конфига
+                const parsedPlans = JSON.parse(savedPlans);
+                appData.plans = { ...appData.plans, ...parsedPlans };
             }
 
             initializeCharts();
@@ -782,9 +780,9 @@
         }
     }
 
-    // --- ЗАГРУЗКА ИЗ ОБЛАКА ---
+    // --- ГЛАВНАЯ ФУНКЦИЯ: ЗАГРУЗКА ИЗ ОБЛАКА ---
     async function loadDataFromServer() {
-        console.log("ПОДКЛЮЧЕНИЕ К YANDEX CLOUD...");
+        console.log("ПОДКЛЮЧЕНИЕ К YANDEX CLOUD ДЛЯ ЗАГРУЗКИ...");
         try {
             const response = await fetch(BACKEND_URL, {
                 method: 'POST',
@@ -814,7 +812,8 @@
                 if (rawServerData.sales) rawServerData.sales.forEach(i => i.event_date = fixDate(i.event_date));
                 if (rawServerData.traffic) rawServerData.traffic.forEach(i => i.event_date = fixDate(i.event_date));
                 if (rawServerData.expenses) rawServerData.expenses.forEach(i => i.event_date = fixDate(i.event_date));
-                
+
+                console.log("ДАННЫЕ ПОЛУЧЕНЫ И ОБРАБОТАНЫ:", rawServerData);
                 applyFilters(); 
                 renderLog();    
             }
@@ -892,12 +891,11 @@
         appData.dailyRevenue = {}; 
         appData.salesBySku = {};
         
-        // Очистка динамических лидов
         CORE_CONFIG.dictionaries.sources.forEach(src => {
             appData.leadsBySource[src] = 0;
         });
 
-        // Обработка продаж
+        // Обработка продаж (с учетом фильтра студии И даты)
         if (rawServerData.sales && rawServerData.sales.length > 0) {
             rawServerData.sales.forEach(s => {
                 if (!isDateInCurrentFilter(s.event_date)) return;
@@ -929,7 +927,7 @@
             });
         }
 
-        // Обработка трафика
+        // Обработка трафика (с учетом фильтра)
         if (rawServerData.traffic && rawServerData.traffic.length > 0) {
             rawServerData.traffic.forEach(t => {
                 if (!isDateInCurrentFilter(t.event_date)) return;
@@ -946,7 +944,7 @@
             });
         }
 
-        // Обработка расходов
+        // Обработка расходов (с учетом фильтра)
         if (rawServerData.expenses && rawServerData.expenses.length > 0) {
             rawServerData.expenses.forEach(e => {
                 if (!isDateInCurrentFilter(e.event_date)) return;
@@ -955,7 +953,7 @@
                 const expVal = parseInt(e.expense_amount) || 0; 
                 appData.totalExpenses += expVal; 
 
-                // Упрощенная логика: если категория содержит слово "Реклама", пишем в маркетинг
+                // Если категория содержит слово "Реклама", пишем в маркетинг
                 if (e.category && e.category.toLowerCase().includes('реклама')) {
                     appData.marketingSpend += expVal; 
                 }
@@ -967,7 +965,7 @@
         updatePlanProgress();
     }
 
-    // --- ЖУРНАЛ ---
+    // --- ПОЛНОЦЕННЫЙ ЖУРНАЛ ---
     function renderLog() {
         if (!rawServerData) return;
         
@@ -1031,8 +1029,12 @@
 
     // --- НАВИГАЦИЯ ---
     function switchTab(pageId, navElement) {
-        document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        document.querySelectorAll('.nav-item').forEach(nav => {
+            nav.classList.remove('active');
+        });
         
         document.getElementById(pageId).classList.add('active');
         navElement.classList.add('active');
@@ -1061,8 +1063,6 @@
         const studio = document.getElementById('plan-studio').value;
         const revPlan = parseInt(document.getElementById('plan-rev-input').value) || 0;
         const leadsPlan = parseInt(document.getElementById('plan-leads-input').value) || 0;
-        
-        if (!appData.plans[studio]) appData.plans[studio] = { rev: 0, leads: 0 };
         
         appData.plans[studio].rev = revPlan;
         appData.plans[studio].leads = leadsPlan;
@@ -1243,7 +1243,7 @@
         const profit = appData.totalRevenue - appData.totalExpenses;
         const profitEl = document.getElementById('d-profit');
         profitEl.innerText = profit.toLocaleString() + " ₽";
-        profitEl.style.color = profit >= 0 ? 'var(--ok)' : 'var(--crit)';
+        profitEl.style.color = profit >= 0 ? 'var(--ok)' : 'var(--crit)'; 
 
         document.getElementById('d-sec-rev').innerText = appData.secondaryRevenue.toLocaleString();
         document.getElementById('d-sec-count').innerText = appData.secondarySalesCount;
@@ -1354,7 +1354,9 @@
         const inputField = document.getElementById('vera-in'); 
         const userText = inputField.value;
         
-        if (!userText) return;
+        if (!userText) {
+            return;
+        }
         
         const chatBox = document.getElementById('vera-chat');
         chatBox.innerHTML += `
@@ -1390,7 +1392,7 @@
                 document.getElementById(loadingId).innerHTML = "Ошибка связи с сервером базы данных.";
             }
         } catch (e) {
-            document.getElementById(loadingId).innerHTML = "Критическая ошибка: невозможно подключиться к Ядру.";
+            document.getElementById(loadingId).innerHTML = "Критическая ошибка: невозможно подключиться к 'Монолиту'.";
         }
         
         chatBox.scrollTop = chatBox.scrollHeight;
