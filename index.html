@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>UNIFIED CORE | Система управления бизнесом</title>
+    <title id="tab-title">CORE ERP | Система управления</title>
     
     <link rel="icon" type="image/png" href="favicon.png">
     
@@ -138,7 +138,7 @@
             transform: scale(0.97); 
         }
 
-        input, select {
+        input, select, textarea {
             width: 100%; 
             background: #ffffff; 
             border: 1px solid rgba(0,0,0,0.1);
@@ -152,6 +152,11 @@
             -webkit-appearance: none;
         }
 
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
         select { 
             background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23A68A56%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E'); 
             background-repeat: no-repeat; 
@@ -159,7 +164,7 @@
             background-size: 12px auto; 
         }
 
-        input:focus, select:focus {
+        input:focus, select:focus, textarea:focus {
             border-color: var(--accent);
             outline: none;
         }
@@ -311,8 +316,8 @@
             overflow: hidden; 
         }
 
-        /* БЛОКИРОВКА */
-        #auth { 
+        /* БЛОКИРОВКА И ПАНЕЛЬ НАСТРОЕК */
+        #auth, #config-modal { 
             position: fixed; 
             inset: 0; 
             background: var(--bg-deep); 
@@ -322,6 +327,23 @@
             align-items: center; 
             justify-content: center; 
             padding: 40px; 
+        }
+
+        #config-modal {
+            display: none;
+            overflow-y: auto;
+            justify-content: flex-start;
+            padding: 20px;
+        }
+
+        .config-box {
+            background: var(--glass);
+            padding: 25px;
+            border-radius: 24px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: var(--shadow);
+            margin-top: 20px;
         }
 
         /* ШАПКА И ФИЛЬТРЫ */
@@ -371,11 +393,38 @@
 
 <div id="auth">
     <div style="width: 80px; height: 80px; margin-bottom: 20px; background: var(--accent); border-radius: 20px; display: flex; align-items: center; justify-content: center; color: white; font-size: 32px; font-weight: bold; box-shadow: var(--shadow);">U</div>
-    <h1 style="font-size: 40px; margin-bottom: 10px; letter-spacing: 5px; text-align: center;">CORE ERP</h1>
+    <h1 id="brand-auth-title" style="font-size: 40px; margin-bottom: 10px; letter-spacing: 5px; text-align: center;">CORE ERP</h1>
     <p style="color: var(--text-dim); margin-bottom: 40px; text-transform: uppercase; font-size: 12px; letter-spacing: 2px;">Юнит-Экономика / Управление</p>
     <input type="password" id="pass" placeholder="Кодовое слово доступа" style="text-align: center; max-width: 320px;">
     <button class="btn" style="max-width: 320px;" onclick="unlockSystem()">ВХОД В СИСТЕМУ</button>
     <p id="auth-error" style="color: var(--crit); font-size: 12px; margin-top: 15px; display: none;">Неверный пароль или доступ истек.</p>
+</div>
+
+<div id="config-modal">
+    <div class="config-box">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 class="serif" style="font-size: 28px;">Настройки Бренда</h2>
+            <span onclick="closeConfig()" style="cursor: pointer; font-size: 28px; line-height: 0.5;">&times;</span>
+        </div>
+        <p style="font-size: 12px; color: var(--text-dim); margin-bottom: 20px;">Впишите данные. Каждый пункт с новой строки. После сохранения база демо-данных сгенерируется заново.</p>
+        
+        <label>Название Бренда (в шапке)</label>
+        <input type="text" id="cfg-brand" value="CORE ERP">
+        
+        <label>Подразделения (Локации / Студии)</label>
+        <textarea id="cfg-units"></textarea>
+        
+        <label>Номенклатура (Услуги / Товары)</label>
+        <textarea id="cfg-products"></textarea>
+        
+        <label>Каналы трафика</label>
+        <textarea id="cfg-sources"></textarea>
+        
+        <label>Категории расходов</label>
+        <textarea id="cfg-expenses"></textarea>
+
+        <button class="btn" onclick="saveConfig()">Применить и Перезагрузить</button>
+    </div>
 </div>
 
 <nav id="nav-bar" style="display: none;">
@@ -401,7 +450,7 @@
     </div>
     <div id="vera-chat" style="flex: 1; padding: 20px; overflow-y: auto; font-size: 14px;">
         <div style="background: #fff; padding: 15px; border-radius: 15px; border: var(--glass-border); margin-bottom: 15px;" id="vera-welcome-msg">
-            Добро пожаловать в демо-версию! Я искусственный интеллект системы. В боевом режиме я анализирую таблицы и даю рекомендации.
+            Добро пожаловать в систему! Я искусственный интеллект. В полной версии я анализирую таблицы и даю рекомендации.
         </div>
     </div>
     <div style="padding: 15px; background: #fff; display: flex; gap: 10px;">
@@ -415,19 +464,18 @@
         <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
             <div style="display: flex; align-items: center; gap: 12px;">
                 <div style="width: 35px; height: 35px; background: var(--accent); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">U</div>
-                <h2 class="serif" style="font-size: 32px; margin: 0;">Сводка</h2>
+                <h2 class="serif" style="font-size: 32px; margin: 0;" id="brand-dash-title">CORE ERP</h2>
             </div>
-            <div onclick="logout()" style="cursor: pointer; font-size: 10px; font-weight: 800; color: var(--text-dim); border: 1px solid rgba(0,0,0,0.1); padding: 8px 12px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px;">
-                Выход 🚪
+            <div style="display: flex; gap: 10px;">
+                <div onclick="openConfigPrompt()" style="cursor: pointer; font-size: 16px; padding: 6px; border-radius: 8px;">⚙️</div>
+                <div onclick="logout()" style="cursor: pointer; font-size: 10px; font-weight: 800; color: var(--text-dim); border: 1px solid rgba(0,0,0,0.1); padding: 8px 12px; border-radius: 12px; text-transform: uppercase; letter-spacing: 1px;">Выход 🚪</div>
             </div>
         </div>
         
         <div class="filter-row">
             <select id="dash-studio-filter" class="period-select" onchange="applyFilters()">
                 <option value="all" selected>Общая сводка</option>
-                <option value="Локация 1">Локация 1</option>
-                <option value="Локация 2">Локация 2</option>
-            </select>
+                </select>
 
             <select id="period-filter" class="period-select" onchange="toggleCustomDate()">
                 <option value="today">За сегодня</option>
@@ -540,8 +588,6 @@
         <label>Подразделение (Локация)</label>
         <select id="in-loc">
             <option value="">-- ВЫБРАТЬ ПОДРАЗДЕЛЕНИЕ --</option>
-            <option value="Локация 1">Локация 1</option>
-            <option value="Локация 2">Локация 2</option>
         </select>
     </div>
 
@@ -550,11 +596,6 @@
         <label>Источник лидов</label>
         <select id="l-src">
             <option value="">-- ВЫБРАТЬ ИСТОЧНИК --</option>
-            <option value="Канал 1">Канал 1</option>
-            <option value="Канал 2">Канал 2</option>
-            <option value="Канал 3">Канал 3</option>
-            <option value="Рефералы">Рефералы</option>
-            <option value="Сайт">Сайт</option>
         </select>
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
             <div>
@@ -581,11 +622,6 @@
         <label>Номенклатура (Продукт)</label>
         <select id="s-type">
             <option value="">-- ВЫБРАТЬ УСЛУГУ --</option>
-            <option value="Услуга 1">Услуга 1</option>
-            <option value="Услуга 2">Услуга 2</option>
-            <option value="Услуга 3">Услуга 3</option>
-            <option value="Услуга 4">Услуга 4</option>
-            <option value="Услуга 5">Услуга 5</option>
         </select>
         <label>Фактическая сумма оплаты (₽)</label>
         <input type="number" id="s-val" placeholder="Например: 15000">
@@ -597,10 +633,6 @@
         <label>Категория</label>
         <select id="e-cat">
             <option value="">-- ВЫБРАТЬ КАТЕГОРИЮ --</option>
-            <option value="Реклама (Бюджет)">Реклама (Бюджет)</option>
-            <option value="Расходы 1">Расходы 1</option>
-            <option value="Расходы 2">Расходы 2</option>
-            <option value="Расходы 3">Расходы 3</option>
         </select>
         <label>Сумма (₽)</label>
         <input type="number" id="e-val" placeholder="0">
@@ -623,8 +655,6 @@
         <label>Целевая Локация</label>
         <select id="plan-studio" onchange="updatePlanProgress()">
             <option value="all">Все локации (Общий план)</option>
-            <option value="Локация 1">Локация 1</option>
-            <option value="Локация 2">Локация 2</option>
         </select>
         <label>План по Выручке (₽)</label>
         <input type="number" id="plan-rev-input" placeholder="Например: 1000000">
@@ -634,7 +664,7 @@
     </div>
 
     <div class="card">
-        <h3 class="serif" style="margin-bottom: 15px;">Контроль выполнения (Локация: <span id="active-plan-label" style="color:var(--accent);">Все</span>)</h3>
+        <h3 class="serif" style="margin-bottom: 15px;">Контроль выполнения (<span id="active-plan-label" style="color:var(--accent);">Все</span>)</h3>
         
         <label>Выручка: <span id="plan-rev-text">0 / 0 ₽ (0%)</span></label>
         <div class="plan-bar-bg">
@@ -663,77 +693,171 @@
 </div>
 
 <script>
-    // === АВТОНОМНЫЙ ДЕМО-РЕЖИМ (БЕЗ YDB) ===
+    // === ДИНАМИЧЕСКИЙ КОНФИГУРАТОР ===
+    let sysConfig = {
+        brand: "CORE ERP",
+        units: ["Локация 1", "Локация 2"],
+        products: ["Услуга 1", "Услуга 2", "Услуга 3", "Услуга 4", "Услуга 5"],
+        sources: ["Канал 1", "Канал 2", "Сайт", "Рефералы"],
+        expenses: ["Реклама (Бюджет)", "Расходы 1", "Расходы 2"]
+    };
+
+    function loadSettings() {
+        const saved = localStorage.getItem('core_sys_config');
+        if (saved) {
+            sysConfig = JSON.parse(saved);
+        }
+        
+        document.getElementById('tab-title').innerText = sysConfig.brand + " | Система управления";
+        document.getElementById('brand-auth-title').innerText = sysConfig.brand;
+        document.getElementById('brand-dash-title').innerText = sysConfig.brand;
+
+        populateSelect('dash-studio-filter', sysConfig.units, true, "Общая сводка");
+        populateSelect('in-loc', sysConfig.units, false);
+        populateSelect('plan-studio', sysConfig.units, true, "Все локации (Общий план)");
+        populateSelect('l-src', sysConfig.sources, false);
+        populateSelect('s-type', sysConfig.products, false);
+        populateSelect('e-cat', sysConfig.expenses, false);
+    }
+
+    function populateSelect(id, array, includeAll, allText) {
+        const select = document.getElementById(id);
+        if (!select) return;
+        select.innerHTML = "";
+        if (includeAll) {
+            select.innerHTML += `<option value="all">${allText}</option>`;
+        } else {
+            select.innerHTML += `<option value="">-- ВЫБРАТЬ --</option>`;
+        }
+        array.forEach(item => {
+            select.innerHTML += `<option value="${item}">${item}</option>`;
+        });
+    }
+
+    // --- ПАНЕЛЬ АДМИНИСТРАТОРА ---
+    function openConfigPrompt() {
+        const pwd = prompt("Введите мастер-пароль для доступа к настройкам:");
+        if (pwd === "Boss admin 1981") {
+            document.getElementById('cfg-brand').value = sysConfig.brand;
+            document.getElementById('cfg-units').value = sysConfig.units.join('\n');
+            document.getElementById('cfg-products').value = sysConfig.products.join('\n');
+            document.getElementById('cfg-sources').value = sysConfig.sources.join('\n');
+            document.getElementById('cfg-expenses').value = sysConfig.expenses.join('\n');
+            document.getElementById('config-modal').style.display = 'flex';
+        } else if (pwd !== null) {
+            alert("Неверный пароль конфигуратора.");
+        }
+    }
+
+    function closeConfig() {
+        document.getElementById('config-modal').style.display = 'none';
+    }
+
+    function saveConfig() {
+        const newBrand = document.getElementById('cfg-brand').value.trim() || "CORE ERP";
+        const newUnits = document.getElementById('cfg-units').value.split('\n').map(s => s.trim()).filter(s => s);
+        const newProducts = document.getElementById('cfg-products').value.split('\n').map(s => s.trim()).filter(s => s);
+        const newSources = document.getElementById('cfg-sources').value.split('\n').map(s => s.trim()).filter(s => s);
+        const newExpenses = document.getElementById('cfg-expenses').value.split('\n').map(s => s.trim()).filter(s => s);
+
+        if (newUnits.length === 0 || newProducts.length === 0) {
+            alert("Списки локаций и услуг не могут быть пустыми!");
+            return;
+        }
+
+        sysConfig.brand = newBrand;
+        sysConfig.units = newUnits;
+        sysConfig.products = newProducts;
+        sysConfig.sources = newSources;
+        sysConfig.expenses = newExpenses;
+
+        localStorage.setItem('core_sys_config', JSON.stringify(sysConfig));
+        
+        // Очищаем старые демо-данные, чтобы перестроить базу под новые названия
+        localStorage.removeItem('core_mock_generated');
+        rawServerData = { sales: [], expenses: [], traffic: [] };
+        
+        alert("Настройки применены. Система перезагружается для генерации новой базы данных.");
+        location.reload();
+    }
+
+    // === АВТОНОМНЫЙ ДЕМО-РЕЖИМ ===
     let appData = { 
         totalRevenue: 0, secondaryRevenue: 0, leads: 0, bookings: 0,
         trials: 0, primarySales: 0, secondarySalesCount: 0, marketingSpend: 0,
-        totalExpenses: 0, dailyRevenue: {}, 
-        leadsBySource: { 'Канал 1': 0, 'Канал 2': 0, 'Канал 3': 0, 'Сайт': 0, 'Рефералы': 0 }, 
-        salesBySku: {},
-        plans: {
-            'all': { rev: 1500000, leads: 500 },
-            'Локация 1': { rev: 800000, leads: 300 },
-            'Локация 2': { rev: 700000, leads: 200 }
-        }
+        totalExpenses: 0, dailyRevenue: {}, leadsBySource: {}, salesBySku: {}, plans: {}
     };
 
     let rawServerData = { sales: [], expenses: [], traffic: [] }; 
     let revenueChartInstance; let channelsChartInstance; let skuChartInstance;
 
+    function initAppDataStructures() {
+        appData.leadsBySource = {};
+        sysConfig.sources.forEach(s => appData.leadsBySource[s] = 0);
+        
+        appData.plans = { 'all': { rev: 1500000, leads: 500 } };
+        sysConfig.units.forEach(u => appData.plans[u] = { rev: 800000, leads: 300 });
+    }
+
     // --- ГЕНЕРАТОР ДЕМО-ДАННЫХ ---
     function generateMockData() {
-        const today = new Date();
-        const studios = ["Локация 1", "Локация 2"];
-        const services = ["Услуга 1", "Услуга 2", "Услуга 3", "Услуга 4", "Услуга 5"];
-        const sources = ["Канал 1", "Канал 2", "Канал 3", "Сайт", "Рефералы"];
-        const expensesCat = ["Реклама (Бюджет)", "Расходы 1", "Расходы 2"];
+        initAppDataStructures();
+        const isGenerated = localStorage.getItem('core_mock_generated');
+        
+        if (isGenerated) {
+            rawServerData = JSON.parse(localStorage.getItem('core_mock_data'));
+            return;
+        }
 
+        const today = new Date();
         for (let i = 30; i >= 0; i--) {
             let d = new Date(today);
             d.setDate(d.getDate() - i);
             let dateStr = d.toISOString().split('T')[0];
 
-            // Фейковые продажи
             let dailySales = Math.floor(Math.random() * 5);
             for(let j=0; j<dailySales; j++) {
                 let isSec = Math.random() > 0.6;
                 rawServerData.sales.push({
                     sale_id: "m" + Math.random(),
                     event_date: dateStr,
-                    studio_name: studios[Math.floor(Math.random()*studios.length)],
+                    studio_name: sysConfig.units[Math.floor(Math.random()*sysConfig.units.length)],
                     client_status: isSec ? "sec" : "prim",
-                    product_sku: services[Math.floor(Math.random()*services.length)],
+                    product_sku: sysConfig.products[Math.floor(Math.random()*sysConfig.products.length)],
                     payment_amount: (Math.floor(Math.random() * 10) + 5) * 1000
                 });
-                rawServerData.sales.push({ sale_id: "t"+Math.random(), event_date: dateStr, studio_name: studios[0], client_status: "trial", product_sku: "Услуга 1", payment_amount: 0 });
+                rawServerData.sales.push({ 
+                    sale_id: "t"+Math.random(), event_date: dateStr, studio_name: sysConfig.units[0], client_status: "trial", product_sku: sysConfig.products[0], payment_amount: 0 
+                });
             }
 
-            // Фейковый трафик
             rawServerData.traffic.push({
                 record_id: "tr" + Math.random(),
                 event_date: dateStr,
-                studio_name: studios[Math.floor(Math.random()*studios.length)],
-                source_name: sources[Math.floor(Math.random()*sources.length)],
+                studio_name: sysConfig.units[Math.floor(Math.random()*sysConfig.units.length)],
+                source_name: sysConfig.sources[Math.floor(Math.random()*sysConfig.sources.length)],
                 leads_count: Math.floor(Math.random() * 15) + 5,
                 bookings_count: Math.floor(Math.random() * 8) + 2
             });
 
-            // Фейковые расходы (раз в 5 дней)
             if (i % 5 === 0) {
                 rawServerData.expenses.push({
                     expense_id: "e" + Math.random(),
                     event_date: dateStr,
-                    studio_name: studios[0],
-                    category: expensesCat[Math.floor(Math.random()*expensesCat.length)],
+                    studio_name: sysConfig.units[0],
+                    category: sysConfig.expenses[Math.floor(Math.random()*sysConfig.expenses.length)],
                     expense_amount: (Math.floor(Math.random() * 20) + 10) * 1000
                 });
             }
         }
+        localStorage.setItem('core_mock_generated', 'true');
+        localStorage.setItem('core_mock_data', JSON.stringify(rawServerData));
     }
 
     // --- ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ СТРАНИЦЫ ---
     window.onload = function() {
-        generateMockData(); // Инициализация демо-данных
+        loadSettings();
+        generateMockData(); 
         
         const isAuth = localStorage.getItem('core_auth');
         const expiry = localStorage.getItem('core_expiry');
@@ -754,7 +878,6 @@
             initializeCharts();
             switchTab('page-dash', document.querySelector('.nav-item.active'));
         } else {
-            // Очистка при истечении времени
             localStorage.removeItem('core_auth');
             localStorage.removeItem('core_expiry');
             localStorage.removeItem('core_user');
@@ -770,7 +893,7 @@
         
         if (passwordInput === "Boss admin 1981") {
             userName = "Владелец (Unlimited)";
-            durationDays = 3650; // 10 лет
+            durationDays = 3650; 
         } else if (passwordInput === "admin") {
             userName = "Администратор";
             durationDays = 3; 
@@ -800,7 +923,6 @@
         switchTab('page-dash', document.querySelector('.nav-item.active'));
     }
 
-    // --- ФУНКЦИЯ ВЫХОДА ---
     function logout() {
         if (confirm("Выйти из системы управления?")) {
             localStorage.clear(); 
@@ -808,13 +930,15 @@
         }
     }
 
-    // --- ЭМУЛЯЦИЯ ЗАГРУЗКИ СЕРВЕРА ---
+    function persistMockData() {
+        localStorage.setItem('core_mock_data', JSON.stringify(rawServerData));
+    }
+
     function loadDataFromServer() {
         applyFilters(); 
         renderLog();    
     }
 
-    // --- ЛОГИКА ФИЛЬТРАЦИИ ПО ДАТАМ ---
     function isDateInCurrentFilter(dateString) {
         if (!dateString) return false;
         const dStr = dateString; 
@@ -852,7 +976,6 @@
         return true;
     }
 
-    // --- ОБРАБОТКА ДАННЫХ И ФИЛЬТРАЦИЯ ---
     function applyFilters() {
         const studioFilter = document.getElementById('dash-studio-filter').value;
         
@@ -895,7 +1018,7 @@
                 appData.leads += parseInt(t.leads_count) || 0;
                 appData.bookings += parseInt(t.bookings_count) || 0;
                 
-                if (!appData.leadsBySource[t.source_name]) appData.leadsBySource[t.source_name] = 0;
+                if (appData.leadsBySource[t.source_name] === undefined) appData.leadsBySource[t.source_name] = 0;
                 appData.leadsBySource[t.source_name] += parseInt(t.leads_count) || 0;
             });
         }
@@ -908,7 +1031,7 @@
                 const expVal = parseInt(e.expense_amount) || 0; 
                 appData.totalExpenses += expVal; 
 
-                if (e.category && e.category.includes('Реклама')) {
+                if (e.category && e.category.toLowerCase().includes('реклама')) {
                     appData.marketingSpend += expVal; 
                 }
             });
@@ -919,7 +1042,6 @@
         updatePlanProgress();
     }
 
-    // --- ЖУРНАЛ С КНОПКОЙ СТОРНО (ЛОКАЛЬНЫЙ) ---
     function renderLog() {
         const logList = document.getElementById('log-list');
         logList.innerHTML = "";
@@ -932,7 +1054,6 @@
                 }
             });
         }
-
         if (rawServerData.expenses) {
             rawServerData.expenses.forEach(e => {
                 if(isDateInCurrentFilter(e.event_date)){
@@ -940,7 +1061,6 @@
                 }
             });
         }
-
         if (rawServerData.traffic) {
             rawServerData.traffic.forEach(t => {
                 if(isDateInCurrentFilter(t.event_date)){
@@ -982,10 +1102,10 @@
         if (type === 'sale') rawServerData.sales = rawServerData.sales.filter(i => i.sale_id !== id);
         if (type === 'expense') rawServerData.expenses = rawServerData.expenses.filter(i => i.expense_id !== id);
         if (type === 'traffic') rawServerData.traffic = rawServerData.traffic.filter(i => i.record_id !== id);
+        persistMockData();
         loadDataFromServer(); 
     }
 
-    // --- НАВИГАЦИЯ ---
     function switchTab(pageId, navElement) {
         document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
         document.querySelectorAll('.nav-item').forEach(nav => nav.classList.remove('active'));
@@ -1000,22 +1120,21 @@
     function toggleCustomDate() {
         const val = document.getElementById('period-filter').value;
         const customWrap = document.getElementById('custom-date-wrap');
-        
         if (val === 'custom') customWrap.style.display = 'flex';
         else { customWrap.style.display = 'none'; applyFilters(); renderLog(); }
     }
 
-    // --- KPI И ПЛАНЫ (ЛОКАЛЬНЫЕ ДЛЯ ДЕМО) ---
     function savePlan() {
         const studio = document.getElementById('plan-studio').value;
         const revPlan = parseInt(document.getElementById('plan-rev-input').value) || 0;
         const leadsPlan = parseInt(document.getElementById('plan-leads-input').value) || 0;
         
+        if (!appData.plans[studio]) appData.plans[studio] = {rev:0, leads:0};
         appData.plans[studio].rev = revPlan;
         appData.plans[studio].leads = leadsPlan;
         localStorage.setItem('core_plans', JSON.stringify(appData.plans));
         
-        alert("План успешно сохранен в демо-режиме!");
+        alert("План успешно сохранен!");
         document.getElementById('plan-rev-input').value = "";
         document.getElementById('plan-leads-input').value = "";
         updatePlanProgress();
@@ -1054,7 +1173,6 @@
         document.getElementById('plan-leads-bar').style.width = leadPct + '%';
     }
 
-    // --- ВВОД ДАННЫХ (ЭМУЛЯЦИЯ СОХРАНЕНИЯ) ---
     function addTraffic(btn) {
         const data = { 
             record_id: "tr" + Math.random(),
@@ -1067,7 +1185,8 @@
         if (!data.studio_name || !data.source_name || !data.event_date) { alert("Заполните все обязательные поля!"); return; }
         
         rawServerData.traffic.push(data);
-        alert("Трафик успешно зафиксирован в демо-базе!");
+        persistMockData();
+        alert("Трафик успешно зафиксирован!");
         document.getElementById('l-qty').value = ""; document.getElementById('b-qty').value = ""; document.getElementById('l-src').value = ""; 
         loadDataFromServer(); 
     }
@@ -1084,7 +1203,8 @@
         if (!data.studio_name || !data.event_date || !data.client_status || !data.product_sku) { alert("Заполните все поля продаж!"); return; }
         
         rawServerData.sales.push(data);
-        alert("Продажа зафиксирована в демо-базе!");
+        persistMockData();
+        alert("Продажа зафиксирована!");
         document.getElementById('s-val').value = ""; document.getElementById('s-cat').value = ""; document.getElementById('s-type').value = ""; 
         loadDataFromServer(); 
     }
@@ -1100,12 +1220,12 @@
         if (!data.studio_name || !data.event_date || !data.category || data.expense_amount <= 0) { alert("Заполните все поля расхода!"); return; }
         
         rawServerData.expenses.push(data);
-        alert("Расход учтен в демо-базе!");
+        persistMockData();
+        alert("Расход учтен!");
         document.getElementById('e-val').value = ""; document.getElementById('e-cat').value = ""; 
         loadDataFromServer();
     }
 
-    // --- ОБНОВЛЕНИЕ ВИЗУАЛА ---
     function updateDashboardView() {
         document.getElementById('d-rev').innerText = appData.totalRevenue.toLocaleString() + " ₽";
         document.getElementById('d-exp').innerText = appData.totalExpenses.toLocaleString() + " ₽";
@@ -1181,7 +1301,6 @@
         }
     }
 
-    // --- ЛОГИКА ВЕРЫ (ЭМУЛЯЦИЯ ИИ) ---
     function toggleVera() {
         const v = document.getElementById('vera-box');
         v.style.display = (v.style.display === 'flex' ? 'none' : 'flex');
@@ -1200,11 +1319,11 @@
         
         inputField.value = "";
         const loadingId = "vera-load-" + Date.now();
-        chatBox.innerHTML += `<div id="${loadingId}" style="background:#fff; padding:15px; border-radius:15px; margin-bottom:15px;">Анализирую демо-данные...</div>`; 
+        chatBox.innerHTML += `<div id="${loadingId}" style="background:#fff; padding:15px; border-radius:15px; margin-bottom:15px;">Анализирую данные...</div>`; 
         chatBox.scrollTop = chatBox.scrollHeight; 
 
         setTimeout(() => {
-            document.getElementById(loadingId).innerHTML = "Так как это демо-режим без подключения к облачному ИИ, я могу подтвердить: система работает отлично! Конверсия в норме, выручка стабильная. В платной версии я смогу детально разбирать каждый показатель.";
+            document.getElementById(loadingId).innerHTML = "Так как это демо-режим, я могу подтвердить: система работает безупречно! Конверсия в норме. В PRO-версии я смогу детально разбирать каждый показатель на основе данных из облака.";
             chatBox.scrollTop = chatBox.scrollHeight;
         }, 1500);
     }
