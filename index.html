@@ -422,7 +422,7 @@
         <label>Категории расходов</label>
         <textarea id="cfg-expenses"></textarea>
 
-        <button class="btn" id="save-cfg-btn" onclick="saveConfig()">Применить настройки</button>
+        <button class="btn" id="save-cfg-btn" onclick="saveConfig()">Сохранить локально</button>
     </div>
 </div>
 
@@ -686,10 +686,6 @@
 </div>
 
 <script>
-    // === НАСТРОЙКИ ОБЛАКА (Yandex Cloud) ===
-    const BACKEND_URL = "https://functions.yandexcloud.net/d4esie0g5hb62gg515a9";
-    const BACKEND_TOKEN = "Resurs_studio-2026"; 
-
     // === ДИНАМИЧЕСКИЙ КОНФИГУРАТОР (Базовые настройки) ===
     let sysConfig = {
         brand: "РЕСУРС",
@@ -710,45 +706,26 @@
         dailyRevenue: {}, leadsBySource: {}, salesBySku: {}, plans: {}
     };
 
-    let rawServerData = null; 
+    // === ЛОКАЛЬНАЯ БАЗА ДАННЫХ (ПЕСОЧНИЦА) ===
+    let rawServerData = { sales: [], traffic: [], expenses: [], plans: [] }; 
     let revenueChartInstance; let channelsChartInstance; let skuChartInstance;
 
-    // --- ФУНКЦИЯ: ЗАГРУЗКА НАСТРОЕК ИЗ ОБЛАКА ---
-    async function loadGlobalSettings() {
-        try {
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Token': BACKEND_TOKEN },
-                body: JSON.stringify({ action: 'fetch_settings' })
-            });
-
-            if (res.ok) {
-                const cloudConfig = await res.json();
-                if (cloudConfig && cloudConfig.brand) {
-                    sysConfig = cloudConfig;
-                }
-            } else {
-                console.log("Облачные настройки не найдены, используем локальные/базовые.");
-                const saved = localStorage.getItem('core_sys_config');
-                if (saved) {
-                    sysConfig = JSON.parse(saved);
-                }
-            }
-        } catch (e) {
-            console.error("Ошибка загрузки настроек", e);
-            const saved = localStorage.getItem('core_sys_config');
-            if (saved) {
+    // --- ЗАГРУЗКА НАСТРОЕК (ИЗ LOCALSTORAGE) ---
+    function loadGlobalSettings() {
+        const saved = localStorage.getItem('resurs_sandbox_config');
+        if (saved) {
+            try {
                 sysConfig = JSON.parse(saved);
-            }
+            } catch(e){}
         }
 
-        document.getElementById('tab-title').innerText = sysConfig.brand + " | Система управления";
+        document.getElementById('tab-title').innerText = sysConfig.brand + " | Песочница";
         document.getElementById('brand-auth-title').innerText = sysConfig.brand;
         document.getElementById('brand-dash-title').innerText = "Сводка: " + sysConfig.brand;
 
         populateSelect('dash-studio-filter', sysConfig.units, true, "Общая сводка");
         populateSelect('in-loc', sysConfig.units, false);
-        populateSelect('plan-studio', sysConfig.units, true, "Все локации (Общий план)");
+        populateSelect('plan-studio', sysConfig.units, true, "Все локации");
         populateSelect('l-src', sysConfig.sources, false);
         populateSelect('s-type', sysConfig.products, false);
         populateSelect('e-cat', sysConfig.expenses, false);
@@ -787,7 +764,7 @@
         document.getElementById('config-modal').style.display = 'none';
     }
 
-    async function saveConfig() {
+    function saveConfig() {
         const newBrand = document.getElementById('cfg-brand').value.trim() || "РЕСУРС";
         const newUnits = document.getElementById('cfg-units').value.split('\n').map(s => s.trim()).filter(s => s);
         const newProducts = document.getElementById('cfg-products').value.split('\n').map(s => s.trim()).filter(s => s);
@@ -799,53 +776,24 @@
             return;
         }
 
-        const payload = {
-            brand: newBrand,
-            units: newUnits,
-            products: newProducts,
-            sources: newSources,
-            expenses: newExpenses
-        };
-
-        const btn = document.getElementById('save-cfg-btn');
-        const originalText = btn.innerText;
-        btn.innerText = "СОХРАНЕНИЕ В ОБЛАКО...";
-        btn.disabled = true;
-
-        try {
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Token': BACKEND_TOKEN },
-                body: JSON.stringify({ action: 'save_settings', data: payload })
-            });
-
-            if (res.ok) {
-                alert("Настройки успешно синхронизированы с Yandex Cloud!");
-                location.reload();
-            } else {
-                alert("Ошибка при сохранении в облако.");
-                btn.disabled = false;
-                btn.innerText = originalText;
-            }
-        } catch (e) {
-            console.error("Ошибка сети", e);
-            alert("Ошибка сети при сохранении в облако.");
-            btn.disabled = false;
-            btn.innerText = originalText;
-        }
+        sysConfig = { brand: newBrand, units: newUnits, products: newProducts, sources: newSources, expenses: newExpenses };
+        localStorage.setItem('resurs_sandbox_config', JSON.stringify(sysConfig));
+        
+        alert("Настройки сохранены локально!");
+        location.reload();
     }
 
     // --- ПРОВЕРКА АВТОРИЗАЦИИ И СРОКОВ ГОДНОСТИ ПРИ ЗАГРУЗКЕ ---
-    window.onload = async function() {
-        await loadGlobalSettings(); 
+    window.onload = function() {
+        loadGlobalSettings(); 
         
-        const authStatus = localStorage.getItem('resurs_auth');
-        const authExpiryStr = localStorage.getItem('resurs_auth_expiry');
+        const authStatus = localStorage.getItem('resurs_sandbox_auth');
+        const authExpiryStr = localStorage.getItem('resurs_sandbox_auth_expiry');
         const now = Date.now();
 
         if (authStatus === 'true') {
             if (authExpiryStr && now >= parseInt(authExpiryStr)) {
-                alert("Срок действия вашего пароля истек. Пожалуйста, обратитесь к руководителю.");
+                alert("Срок действия вашего пароля истек.");
                 logout(false);
                 return;
             }
@@ -855,14 +803,9 @@
             document.getElementById('vera-btn').style.display = 'flex';
             document.getElementById('in-date').valueAsDate = new Date();
             
-            const uName = localStorage.getItem('resurs_user') || 'Пользователь';
+            const uName = localStorage.getItem('resurs_sandbox_user') || 'Пользователь';
             document.getElementById('vera-welcome-msg').innerText = `${uName}, здравия желаю! Все системы оцифрованы. Жду команд.`;
             
-            const savedPlans = localStorage.getItem('resurs_plans');
-            if (savedPlans) {
-                appData.plans = JSON.parse(savedPlans);
-            }
-
             initializeCharts();
             switchTab('page-dash', document.querySelector('.nav-item.active'));
         }
@@ -883,22 +826,20 @@
         } else if (passwordInput === "тестадмин") {
             userName = "Тест-Админ";
             expiry = now + (2 * 24 * 60 * 60 * 1000); 
-        } else if (passwordInput === "Ресурс-Николай") {
-            userName = "Николай Сергеевич";
-        } else if (passwordInput === "Ресурс-Ольга") {
-            userName = "Ольга Алексеевна";
+        } else if (passwordInput === "Ресурс-Николай" || passwordInput === "Ресурс-Ольга") {
+            userName = passwordInput === "Ресурс-Николай" ? "Николай Сергеевич" : "Ольга Алексеевна";
         } else { 
             alert("Неверное кодовое слово."); 
             return;
         }
 
-        localStorage.setItem('resurs_auth', 'true');
-        localStorage.setItem('resurs_user', userName);
+        localStorage.setItem('resurs_sandbox_auth', 'true');
+        localStorage.setItem('resurs_sandbox_user', userName);
         
         if (expiry > 0) {
-            localStorage.setItem('resurs_auth_expiry', expiry.toString());
+            localStorage.setItem('resurs_sandbox_auth_expiry', expiry.toString());
         } else {
-            localStorage.removeItem('resurs_auth_expiry');
+            localStorage.removeItem('resurs_sandbox_auth_expiry');
         }
         
         document.getElementById('auth').style.display = 'none';
@@ -913,58 +854,35 @@
     }
 
     function logout(promptUser = true) {
-        if (!promptUser || confirm("Выйти из системы управления?")) {
-            localStorage.clear(); 
+        if (!promptUser || confirm("Выйти из системы управления? Все тестовые данные в браузере будут стерты.")) {
+            localStorage.removeItem('resurs_sandbox_auth');
+            localStorage.removeItem('resurs_sandbox_db');
+            localStorage.removeItem('resurs_plans');
             location.reload();    
         }
     }
 
-    // --- ЗАГРУЗКА ДАННЫХ ИЗ ОБЛАКА ---
-    async function loadDataFromServer() {
-        console.log("ПОДКЛЮЧЕНИЕ К YANDEX CLOUD ДЛЯ ЗАГРУЗКИ ДАННЫХ УЧЕТА...");
-        try {
-            const response = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Api-Token': BACKEND_TOKEN 
-                },
-                body: JSON.stringify({ action: 'fetch_summary' })
-            });
-
-            if (response.ok) {
-                rawServerData = await response.json();
-                
-                const fixDate = (val) => {
-                    if (!val) return "1970-01-01"; 
-                    if (typeof val === 'number') {
-                        return new Date(val * 86400000).toISOString().substring(0, 10);
-                    }
-                    if (typeof val === 'string') {
-                        let s = val.replace(/b['"]/g, '').replace(/['"]/g, '');
-                        return s.substring(0, 10);
-                    }
-                    return String(val).substring(0, 10);
-                };
-
-                if (rawServerData.sales) rawServerData.sales.forEach(i => i.event_date = fixDate(i.event_date));
-                if (rawServerData.traffic) rawServerData.traffic.forEach(i => i.event_date = fixDate(i.event_date));
-                if (rawServerData.expenses) rawServerData.expenses.forEach(i => i.event_date = fixDate(i.event_date));
-                
-                if (rawServerData.plans) {
-                    rawServerData.plans.forEach(p => { 
-                        appData.plans[p.studio_name] = { rev: p.rev_plan, leads: p.leads_plan }; 
-                    });
-                    localStorage.setItem('resurs_plans', JSON.stringify(appData.plans));
-                }
-
-                console.log("ДАННЫЕ ПОЛУЧЕНЫ И ОБРАБОТАНЫ:", rawServerData);
-                applyFilters(); 
-                renderLog();    
-            }
-        } catch (e) {
-            console.error("ОШИБКА ЗАГРУЗКИ:", e);
+    // --- ЗАГРУЗКА ЛОКАЛЬНЫХ ДАННЫХ (БЕЗ ОБЛАКА) ---
+    function loadLocalData() {
+        const localDb = localStorage.getItem('resurs_sandbox_db');
+        if (localDb) {
+            rawServerData = JSON.parse(localDb);
+        } else {
+            rawServerData = { sales: [], traffic: [], expenses: [], plans: [] };
         }
+
+        const savedPlans = localStorage.getItem('resurs_plans');
+        if (savedPlans) {
+            appData.plans = JSON.parse(savedPlans);
+        }
+
+        applyFilters(); 
+        renderLog();    
+    }
+
+    function saveLocalData() {
+        localStorage.setItem('resurs_sandbox_db', JSON.stringify(rawServerData));
+        loadLocalData();
     }
 
     // --- ЛОГИКА ФИЛЬТРАЦИИ ПО ДАТАМ ---
@@ -1123,7 +1041,7 @@
         }
 
         if (allEvents.length === 0) {
-            logList.innerHTML = "<p style='text-align: center; color: var(--text-dim); margin-top: 50px;'>Журнал пуст за выбранный период.</p>";
+            logList.innerHTML = "<p style='text-align: center; color: var(--text-dim); margin-top: 50px;'>Журнал пуст за выбранный период. Внесите тестовые данные во вкладке Ввод.</p>";
             return;
         }
 
@@ -1153,30 +1071,18 @@
         });
     }
 
-    async function deleteEntry(type, id) {
-        if (!id || id === 'undefined') {
-            alert("Ошибка: Запись еще не синхронизирована с базой (нет ID). Обновите страницу.");
-            return;
-        }
-
-        if (!confirm("Удалить эту запись из базы данных (Сторно)? Это действие необратимо.")) return;
+    function deleteEntry(type, id) {
+        if (!confirm("Удалить эту запись? (Локальное сторно)")) return;
         
-        try {
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Token': BACKEND_TOKEN },
-                body: JSON.stringify({ action: 'delete_entry', data: { type, id } })
-            });
-            
-            if (res.ok) {
-                alert("Запись успешно удалена.");
-                loadDataFromServer(); 
-            } else {
-                alert("Не удалось удалить запись. Сервер вернул ошибку.");
-            }
-        } catch (e) { 
-            alert("Ошибка сети при попытке удаления."); 
+        if (type === 'sale') {
+            rawServerData.sales = rawServerData.sales.filter(i => i.sale_id !== id);
+        } else if (type === 'expense') {
+            rawServerData.expenses = rawServerData.expenses.filter(i => i.expense_id !== id);
+        } else if (type === 'traffic') {
+            rawServerData.traffic = rawServerData.traffic.filter(i => i.record_id !== id);
         }
+        
+        saveLocalData();
     }
 
     // --- НАВИГАЦИЯ ---
@@ -1192,7 +1098,7 @@
         navElement.classList.add('active');
         
         if (pageId === 'page-dash' || pageId === 'page-log' || pageId === 'page-plan') {
-            loadDataFromServer();
+            loadLocalData();
         }
         window.scrollTo(0, 0);
     }
@@ -1211,7 +1117,7 @@
     }
 
     // --- KPI И ПЛАНЫ ---
-    async function savePlan() {
+    function savePlan() {
         const studio = document.getElementById('plan-studio').value;
         const revPlan = parseInt(document.getElementById('plan-rev-input').value) || 0;
         const leadsPlan = parseInt(document.getElementById('plan-leads-input').value) || 0;
@@ -1221,23 +1127,7 @@
         appData.plans[studio].leads = leadsPlan;
         localStorage.setItem('resurs_plans', JSON.stringify(appData.plans));
         
-        try {
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-Api-Token': BACKEND_TOKEN },
-                body: JSON.stringify({ 
-                    action: 'save_plan', 
-                    data: { studio, rev: revPlan, leads: leadsPlan } 
-                })
-            });
-            if (res.ok) {
-                alert("План успешно утвержден и синхронизирован с базой!");
-            }
-        } catch (e) { 
-            console.error("Ошибка синхронизации плана", e);
-            alert("План сохранен локально, но произошла ошибка при отправке в базу."); 
-        }
-
+        alert("План сохранен в песочнице!");
         document.getElementById('plan-rev-input').value = "";
         document.getElementById('plan-leads-input').value = "";
         updatePlanProgress();
@@ -1283,123 +1173,75 @@
         document.getElementById('plan-leads-bar').style.width = leadPct + '%';
     }
 
-    // --- ВВОД ДАННЫХ ---
-    async function addTraffic(btn) {
+    // --- ВВОД ДАННЫХ (ТОЛЬКО LOCALSTORAGE) ---
+    function addTraffic(btn) {
         const data = { 
-            studio: document.getElementById('in-loc').value, 
-            date: document.getElementById('in-date').value, 
-            source: document.getElementById('l-src').value, 
-            leads: parseInt(document.getElementById('l-qty').value) || 0, 
-            bookings: parseInt(document.getElementById('b-qty').value) || 0 
+            record_id: "tr_" + Date.now(),
+            studio_name: document.getElementById('in-loc').value, 
+            event_date: document.getElementById('in-date').value, 
+            source_name: document.getElementById('l-src').value, 
+            leads_count: parseInt(document.getElementById('l-qty').value) || 0, 
+            bookings_count: parseInt(document.getElementById('b-qty').value) || 0 
         };
         
-        if (!data.studio || !data.source || !data.date) {
+        if (!data.studio_name || !data.source_name || !data.event_date) {
             alert("Заполните все обязательные поля!");
             return;
         }
         
-        btn.disabled = true; 
-        btn.innerText = "СОХРАНЕНИЕ...";
+        rawServerData.traffic.push(data);
+        saveLocalData();
         
-        try {
-            const res = await fetch(BACKEND_URL, { 
-                method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Api-Token': BACKEND_TOKEN 
-                }, 
-                body: JSON.stringify({ action: 'traffic', data }) 
-            });
-            
-            if (res.ok) { 
-                alert("Трафик успешно зафиксирован!");
-                document.getElementById('l-qty').value = "";
-                document.getElementById('b-qty').value = "";
-                document.getElementById('l-src').value = ""; 
-                loadDataFromServer(); 
-            }
-        } finally { 
-            btn.disabled = false; 
-            btn.innerText = "Внести трафик"; 
-        }
+        alert("Трафик зафиксирован локально!");
+        document.getElementById('l-qty').value = "";
+        document.getElementById('b-qty').value = "";
+        document.getElementById('l-src').value = ""; 
     }
 
-    async function addSale(btn) {
+    function addSale(btn) {
         const data = { 
-            studio: document.getElementById('in-loc').value, 
-            date: document.getElementById('in-date').value, 
-            status: document.getElementById('s-cat').value, 
-            sku: document.getElementById('s-type').value, 
-            amount: parseInt(document.getElementById('s-val').value) || 0 
+            sale_id: "s_" + Date.now(),
+            studio_name: document.getElementById('in-loc').value, 
+            event_date: document.getElementById('in-date').value, 
+            client_status: document.getElementById('s-cat').value, 
+            product_sku: document.getElementById('s-type').value, 
+            payment_amount: parseInt(document.getElementById('s-val').value) || 0 
         };
         
-        if (!data.studio || !data.date || !data.status || !data.sku || data.amount <= 0) {
+        if (!data.studio_name || !data.event_date || !data.client_status || !data.product_sku || data.payment_amount <= 0) {
             alert("Заполните все поля продаж корректно!");
             return;
         }
         
-        btn.disabled = true; 
-        btn.innerText = "СОХРАНЕНИЕ...";
+        rawServerData.sales.push(data);
+        saveLocalData();
         
-        try {
-            const res = await fetch(BACKEND_URL, { 
-                method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Api-Token': BACKEND_TOKEN 
-                }, 
-                body: JSON.stringify({ action: 'sale', data }) 
-            });
-            
-            if (res.ok) { 
-                alert("Продажа зафиксирована в базе!");
-                document.getElementById('s-val').value = "";
-                document.getElementById('s-cat').value = ""; 
-                document.getElementById('s-type').value = ""; 
-                loadDataFromServer(); 
-            }
-        } finally { 
-            btn.disabled = false; 
-            btn.innerText = "Зафиксировать продажу"; 
-        }
+        alert("Продажа зафиксирована локально!");
+        document.getElementById('s-val').value = "";
+        document.getElementById('s-cat').value = ""; 
+        document.getElementById('s-type').value = ""; 
     }
 
-    async function addExpense(btn) {
+    function addExpense(btn) {
         const data = { 
-            studio: document.getElementById('in-loc').value, 
-            date: document.getElementById('in-date').value, 
+            expense_id: "e_" + Date.now(),
+            studio_name: document.getElementById('in-loc').value, 
+            event_date: document.getElementById('in-date').value, 
             category: document.getElementById('e-cat').value, 
-            amount: parseInt(document.getElementById('e-val').value) || 0 
+            expense_amount: parseInt(document.getElementById('e-val').value) || 0 
         };
         
-        if (!data.studio || !data.date || !data.category || data.amount <= 0) {
+        if (!data.studio_name || !data.event_date || !data.category || data.expense_amount <= 0) {
             alert("Заполните все поля расхода!");
             return;
         }
         
-        btn.disabled = true;
-        btn.innerText = "СОХРАНЕНИЕ...";
+        rawServerData.expenses.push(data);
+        saveLocalData();
         
-        try {
-            const res = await fetch(BACKEND_URL, { 
-                method: 'POST', 
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Api-Token': BACKEND_TOKEN 
-                }, 
-                body: JSON.stringify({ action: 'expense', data }) 
-            });
-            
-            if (res.ok) {
-                alert("Расход учтен!");
-                document.getElementById('e-val').value = ""; 
-                document.getElementById('e-cat').value = ""; 
-                loadDataFromServer();
-            }
-        } finally { 
-            btn.disabled = false; 
-            btn.innerText = "Учесть расход";
-        }
+        alert("Расход учтен локально!");
+        document.getElementById('e-val').value = ""; 
+        document.getElementById('e-cat').value = ""; 
     }
 
     // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА (ДИНАМИКА МАРЖИ) ---
@@ -1453,9 +1295,7 @@
     function initializeCharts() {
         const commonOptions = { 
             maintainAspectRatio: false, 
-            plugins: { 
-                legend: { display: false } 
-            } 
+            plugins: { legend: { display: false } } 
         };
         
         if (document.getElementById('revChart')) {
@@ -1464,29 +1304,17 @@
                 data: { 
                     labels: [], 
                     datasets: [{ 
-                        label: 'Выручка', 
-                        data: [], 
-                        borderColor: '#A68A56', 
-                        backgroundColor: 'rgba(166,138,86,0.1)', 
-                        fill: true, 
-                        tension: 0.3 
+                        label: 'Выручка', data: [], borderColor: '#A68A56', 
+                        backgroundColor: 'rgba(166,138,86,0.1)', fill: true, tension: 0.3 
                     }] 
-                },
-                options: commonOptions
+                }, options: commonOptions
             });
         }
 
         if (document.getElementById('chanChart')) {
             channelsChartInstance = new Chart(document.getElementById('chanChart'), {
                 type: 'bar',
-                data: { 
-                    labels: [], 
-                    datasets: [{ 
-                        data: [], 
-                        backgroundColor: '#1C1C1E', 
-                        borderRadius: 6 
-                    }] 
-                },
+                data: { labels: [], datasets: [{ data: [], backgroundColor: '#1C1C1E', borderRadius: 6 }] },
                 options: commonOptions
             });
         }
@@ -1494,14 +1322,7 @@
         if (document.getElementById('skuChart')) {
             skuChartInstance = new Chart(document.getElementById('skuChart'), {
                 type: 'bar',
-                data: { 
-                    labels: [], 
-                    datasets: [{ 
-                        data: [], 
-                        backgroundColor: '#27AE60', 
-                        borderRadius: 6 
-                    }] 
-                },
+                data: { labels: [], datasets: [{ data: [], backgroundColor: '#27AE60', borderRadius: 6 }] },
                 options: commonOptions
             });
         }
@@ -1533,19 +1354,17 @@
         }
     }
 
-    // --- ЛОГИКА ВЕРЫ ---
+    // --- ЛОГИКА ВЕРЫ (ЛОКАЛЬНАЯ ЗАГЛУШКА) ---
     function toggleVera() {
         const v = document.getElementById('vera-box');
         v.style.display = (v.style.display === 'flex' ? 'none' : 'flex');
     }
 
-    async function askVera() {
+    function askVera() {
         const inputField = document.getElementById('vera-in'); 
         const userText = inputField.value;
         
-        if (!userText) {
-            return;
-        }
+        if (!userText) return;
         
         const chatBox = document.getElementById('vera-chat');
         chatBox.innerHTML += `
@@ -1556,36 +1375,20 @@
             </div>`;
         
         inputField.value = "";
-        
         const loadingId = "vera-load-" + Date.now();
         chatBox.innerHTML += `
             <div id="${loadingId}" style="background:#fff; padding:15px; border-radius:15px; margin-bottom:15px;">
-                Анализирую данные из базы...
+                Анализирую данные...
             </div>`; 
         chatBox.scrollTop = chatBox.scrollHeight; 
 
-        try {
-            const uName = localStorage.getItem('resurs_user') || 'Николай Сергеевич';
-            const res = await fetch(BACKEND_URL, {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json', 
-                    'X-Api-Token': BACKEND_TOKEN 
-                },
-                body: JSON.stringify({ action: 'vera_analyze', prompt: userText, user_name: uName })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                document.getElementById(loadingId).innerHTML = data.vera_answer || "Анализ завершен.";
-            } else {
-                document.getElementById(loadingId).innerHTML = "Ошибка связи с сервером базы данных.";
-            }
-        } catch (e) {
-            document.getElementById(loadingId).innerHTML = "Критическая ошибка: невозможно подключиться к 'Монолиту'.";
-        }
-        
-        chatBox.scrollTop = chatBox.scrollHeight;
+        setTimeout(() => {
+            const marginPct = document.getElementById('d-margin-pct').innerText;
+            const uName = localStorage.getItem('resurs_sandbox_user') || 'Собственник';
+            document.getElementById(loadingId).innerHTML = `
+                ${uName}, я проанализировала тестовую базу. Текущая рентабельность составляет <b>${marginPct}</b>. В автономном режиме облачный ИИ недоступен, но цифры говорят сами за себя.`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }, 1200);
     }
 </script>
 
