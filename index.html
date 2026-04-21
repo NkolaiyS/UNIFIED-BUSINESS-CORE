@@ -387,6 +387,17 @@
             padding: 10px;
             font-size: 13px;
         }
+        
+        .section-header {
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            font-size: 20px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+            padding-bottom: 5px;
+            color: var(--accent);
+        }
     </style>
 </head>
 <body>
@@ -493,12 +504,13 @@
         </div>
     </div>
     
+    <div class="section-header">ДДС (Кассовый метод)</div>
     <div class="unit-grid">
         <div class="unit-item">
-            <div class="unit-lab">Выручка</div>
+            <div class="unit-lab">Поступления в кассу</div>
             <div class="unit-val" id="d-rev">0 ₽</div>
-            <div class="sub-val" style="color: var(--ok);">Вторичка (Выручка): <span id="d-sec-rev">0</span> ₽</div>
-            <div class="sub-val" style="color: var(--accent); margin-top: 2px;">Вторичка (Продлений): <span id="d-sec-count">0</span> шт</div>
+            <div class="sub-val" style="color: var(--ok);">Вторичка: <span id="d-sec-rev">0</span> ₽</div>
+            <div class="sub-val" style="color: var(--accent); margin-top: 2px;">Продлений: <span id="d-sec-count">0</span> шт</div>
         </div>
         <div class="unit-item">
             <div class="unit-lab">Расходы (вкл. ФОТ)</div>
@@ -506,10 +518,33 @@
             <div class="sub-val">Все категории трат</div>
         </div>
         <div class="unit-item">
-            <div class="unit-lab">Маржа проекта</div>
-            <div class="unit-val" id="d-margin-val" style="color: var(--ok);">0 ₽</div>
-            <div class="sub-val">Рентабельность: <span id="d-margin-pct" style="font-weight: 700;">0%</span></div>
+            <div class="unit-lab">Остаток ДДС</div>
+            <div class="unit-val" id="d-dds-balance" style="color: var(--ok);">0 ₽</div>
+            <div class="sub-val">Деньги на руках</div>
         </div>
+    </div>
+
+    <div class="section-header">P&L (Управленческий учет)</div>
+    <div class="unit-grid" style="border-left: 3px solid var(--accent); padding-left: 10px;">
+        <div class="unit-item">
+            <div class="unit-lab">Отработано услуг</div>
+            <div class="unit-val" id="pnl-rev" style="color: var(--text);">0 ₽</div>
+            <div class="sub-val">Выручка без авансов</div>
+        </div>
+        <div class="unit-item">
+            <div class="unit-lab">Чистая прибыль</div>
+            <div class="unit-val" id="pnl-profit" style="color: var(--ok);">0 ₽</div>
+            <div class="sub-val">Операционный результат</div>
+        </div>
+        <div class="unit-item">
+            <div class="unit-lab">Маржа бизнеса</div>
+            <div class="unit-val" id="pnl-margin-pct" style="color: var(--ok);">0%</div>
+            <div class="sub-val" style="font-weight: 700;">Рентабельность</div>
+        </div>
+    </div>
+
+    <div class="section-header">Юнит-Экономика (Трафик)</div>
+    <div class="unit-grid">
         <div class="unit-item">
             <div class="unit-lab">Средний чек</div>
             <div class="unit-val" id="d-avg-check">0 ₽</div>
@@ -686,22 +721,34 @@
 </div>
 
 <script>
-    // === ДИНАМИЧЕСКИЙ КОНФИГУРАТОР (Базовые настройки) ===
+    // === СТРОГО УСТАНОВЛЕННЫЕ ДАННЫЕ ВЛАДЕЛЬЦА ===
     let sysConfig = {
         brand: "РЕСУРС",
         units: ["Советская 3", "Коммунистическая 77/2"],
         products: [
-            "Пробное занятие", "Разовое занятие", "Депозит (Бронь)", "Персональное занятие", 
-            "Подписка 3 зан/нед", "Тест драйв 3 зан на 10 дней", "Безлимит на месяц", 
-            "8 занятий", "12 занятий", "16 занятий", "24 занятия", "32 занятия", 
-            "48 занятий", "64 занятия", "96 занятий", "128 занятий"
+            "Пробное занятие (455 руб)", "Депозит (Бронь)",
+            "Подписка 999р/мес", "Курс Стройность/Детокс",
+            "8 занятий (4760 руб)", "16 занятий (11200 руб)", 
+            "32 занятия (22400 руб)", "64 занятия (44800 руб)"
         ],
-        sources: ["ВК", "2ГИС", "Яндекс", "Подруги / Рекомендации", "Архив / Старая база", "Одноклассники", "Сайт"],
-        expenses: ["Реклама (ВК)", "Реклама (Яндекс)", "Такси / Логистика", "Хознужды / Вода", "Аренда / Кредит", "ЗП / Авансы"]
+        sources: ["ВК", "2ГИС", "Яндекс", "Подруги / Рекомендации", "Архив / Старая база", "Одноклассники", "Сайт", "TG-бот (ИМТ)"],
+        expenses: ["Реклама (ВК/Яндекс)", "Такси / Логистика", "Хознужды / Вода", "Аренда студии", "ЗП / Тренеры", "Налоги / Робокасса"]
+    };
+
+    // Справочник длительности абонементов для расчета P&L (в днях)
+    const skuDurationDays = {
+        "Пробное занятие (455 руб)": 1,
+        "Депозит (Бронь)": 1,
+        "Подписка 999р/мес": 30,
+        "Курс Стройность/Детокс": 30,
+        "8 занятий (4760 руб)": 30,    // 1 месяц
+        "16 занятий (11200 руб)": 60,  // 2 месяца
+        "32 занятия (22400 руб)": 120, // 4 месяца
+        "64 занятия (44800 руб)": 240  // 8 месяцев
     };
 
     let appData = { 
-        totalRevenue: 0, secondaryRevenue: 0, leads: 0, bookings: 0, trials: 0, 
+        totalRevenue: 0, pnlRevenue: 0, secondaryRevenue: 0, leads: 0, bookings: 0, trials: 0, 
         primarySales: 0, secondarySalesCount: 0, marketingSpend: 0, totalExpenses: 0, 
         dailyRevenue: {}, leadsBySource: {}, salesBySku: {}, plans: {}
     };
@@ -710,7 +757,17 @@
     let rawServerData = { sales: [], traffic: [], expenses: [], plans: [] }; 
     let revenueChartInstance; let channelsChartInstance; let skuChartInstance;
 
-    // --- ЗАГРУЗКА НАСТРОЕК (ИЗ LOCALSTORAGE) ---
+    // --- ФУНКЦИИ ПАРСИНГА ДАТ ДЛЯ БЕЗОПАСНОСТИ ---
+    function parseDateStr(str) {
+        const parts = str.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1])-1, parseInt(parts[2]));
+    }
+
+    function formatDateObj(d) {
+        return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    }
+
+    // --- ЗАГРУЗКА НАСТРОЕК ---
     function loadGlobalSettings() {
         const saved = localStorage.getItem('resurs_sandbox_config');
         if (saved) {
@@ -745,7 +802,7 @@
         });
     }
 
-    // --- ПАНЕЛЬ АДМИНИСТРАТОРА И ЛОГИКА ДОСТУПА ПО ПАРОЛЯМ ---
+    // --- ПАНЕЛЬ АДМИНИСТРАТОРА ---
     function openConfigPrompt() {
         const pwd = prompt("Введите пароль для доступа к настройкам системы:");
         if (pwd === "Boss admin 1981" || pwd === "admin" || pwd === "тестадмин") {
@@ -783,7 +840,7 @@
         location.reload();
     }
 
-    // --- ПРОВЕРКА АВТОРИЗАЦИИ И СРОКОВ ГОДНОСТИ ПРИ ЗАГРУЗКЕ ---
+    // --- ПРОВЕРКА АВТОРИЗАЦИИ ПРИ ЗАГРУЗКЕ ---
     window.onload = function() {
         loadGlobalSettings(); 
         
@@ -811,7 +868,7 @@
         }
     };
 
-    // --- ЛОГИКА ВХОДА (ПАРОЛИ И ИХ СРОКИ ГОДНОСТИ) ---
+    // --- ЛОГИКА ВХОДА ---
     function unlockSystem() {
         const passwordInput = document.getElementById('pass').value;
         let userName = "";
@@ -862,7 +919,7 @@
         }
     }
 
-    // --- ЗАГРУЗКА ЛОКАЛЬНЫХ ДАННЫХ (БЕЗ ОБЛАКА) ---
+    // --- ЗАГРУЗКА ЛОКАЛЬНЫХ ДАННЫХ ---
     function loadLocalData() {
         const localDb = localStorage.getItem('resurs_sandbox_db');
         if (localDb) {
@@ -893,10 +950,7 @@
         const filterType = document.getElementById('period-filter').value;
 
         const todayObj = new Date();
-        const year = todayObj.getFullYear();
-        const month = String(todayObj.getMonth() + 1).padStart(2, '0');
-        const day = String(todayObj.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
+        const todayStr = formatDateObj(todayObj);
 
         if (filterType === 'all') return true;
         if (filterType === 'today') return dStr === todayStr;
@@ -905,12 +959,7 @@
             const dayOfWeek = todayObj.getDay() || 7;
             const startOfWeekObj = new Date(todayObj);
             startOfWeekObj.setDate(todayObj.getDate() - dayOfWeek + 1);
-            
-            const startYear = startOfWeekObj.getFullYear();
-            const startMonth = String(startOfWeekObj.getMonth() + 1).padStart(2, '0');
-            const startDay = String(startOfWeekObj.getDate()).padStart(2, '0');
-            const startStr = `${startYear}-${startMonth}-${startDay}`;
-
+            const startStr = formatDateObj(startOfWeekObj);
             return dStr >= startStr && dStr <= todayStr;
         }
 
@@ -927,13 +976,13 @@
         return true;
     }
 
-    // --- ОБРАБОТКА ДАННЫХ И ФИЛЬТРАЦИЯ ---
+    // --- ОБРАБОТКА ДАННЫХ, ФИЛЬТРАЦИЯ И P&L ---
     function applyFilters() {
         if (!rawServerData) return; 
         
         const studioFilter = document.getElementById('dash-studio-filter').value;
         
-        appData.totalRevenue = 0; appData.secondaryRevenue = 0;
+        appData.totalRevenue = 0; appData.pnlRevenue = 0; appData.secondaryRevenue = 0;
         appData.leads = 0; appData.bookings = 0; appData.trials = 0;
         appData.primarySales = 0; appData.secondarySalesCount = 0;
         appData.marketingSpend = 0; appData.totalExpenses = 0; 
@@ -942,14 +991,32 @@
         appData.leadsBySource = {};
         sysConfig.sources.forEach(s => appData.leadsBySource[s] = 0);
 
+        // 1. Создаем карту дневного P&L для распределения выручки
+        let dailyPnlMap = {};
+
         if (rawServerData.sales && rawServerData.sales.length > 0) {
             rawServerData.sales.forEach(s => {
-                if (!isDateInCurrentFilter(s.event_date)) return;
-                if (studioFilter !== 'all' && s.studio_name !== studioFilter) return;
-
                 const val = parseInt(s.payment_amount) || 0;
                 const date = s.event_date; 
+                const studio = s.studio_name;
                 
+                // РАСПРЕДЕЛЕНИЕ P&L (Разбиваем сумму на дни жизни абонемента)
+                const duration = skuDurationDays[s.product_sku] || 1;
+                const dailyVal = val / duration;
+                
+                if (!dailyPnlMap[studio]) dailyPnlMap[studio] = {};
+                let currentDate = parseDateStr(s.event_date);
+                
+                for (let i = 0; i < duration; i++) {
+                    const dStr = formatDateObj(currentDate);
+                    dailyPnlMap[studio][dStr] = (dailyPnlMap[studio][dStr] || 0) + dailyVal;
+                    currentDate.setDate(currentDate.getDate() + 1);
+                }
+
+                // ОБЫЧНАЯ КАССА (ДДС) И КОНВЕРСИИ
+                if (!isDateInCurrentFilter(date)) return;
+                if (studioFilter !== 'all' && studio !== studioFilter) return;
+
                 appData.totalRevenue += val;
                 
                 if (!appData.dailyRevenue[date]) {
@@ -971,6 +1038,16 @@
                 }
                 appData.salesBySku[s.product_sku]++;
             });
+        }
+
+        // 2. Сбор отработанной выручки (P&L) для выбранного периода фильтра
+        for (let studio in dailyPnlMap) {
+            if (studioFilter !== 'all' && studio !== studioFilter) continue;
+            for (let dStr in dailyPnlMap[studio]) {
+                if (isDateInCurrentFilter(dStr)) {
+                    appData.pnlRevenue += dailyPnlMap[studio][dStr];
+                }
+            }
         }
 
         if (rawServerData.traffic && rawServerData.traffic.length > 0) {
@@ -1244,26 +1321,35 @@
         document.getElementById('e-cat').value = ""; 
     }
 
-    // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА (ДИНАМИКА МАРЖИ) ---
+    // --- ОБНОВЛЕНИЕ ИНТЕРФЕЙСА (СИНХРОНИЗАЦИЯ ДДС И P&L) ---
     function updateDashboardView() {
+        // БЛОК ДДС (Касса)
         document.getElementById('d-rev').innerText = appData.totalRevenue.toLocaleString() + " ₽";
         document.getElementById('d-exp').innerText = appData.totalExpenses.toLocaleString() + " ₽";
         
-        // Расчет чистой маржи и рентабельности
-        const margin = appData.totalRevenue - appData.totalExpenses;
-        const marginPct = appData.totalRevenue > 0 ? Math.round((margin / appData.totalRevenue) * 100) : 0;
-        
-        const marginEl = document.getElementById('d-margin-val');
-        marginEl.innerText = margin.toLocaleString() + " ₽";
-        marginEl.style.color = margin >= 0 ? 'var(--ok)' : 'var(--crit)';
-
-        const pctEl = document.getElementById('d-margin-pct');
-        pctEl.innerText = marginPct + "%";
-        pctEl.style.color = marginPct >= 20 ? 'var(--ok)' : (marginPct >= 0 ? 'var(--warn)' : 'var(--crit)');
+        const ddsBalance = appData.totalRevenue - appData.totalExpenses;
+        const ddsEl = document.getElementById('d-dds-balance');
+        ddsEl.innerText = ddsBalance.toLocaleString() + " ₽";
+        ddsEl.style.color = ddsBalance >= 0 ? 'var(--ok)' : 'var(--crit)';
 
         document.getElementById('d-sec-rev').innerText = appData.secondaryRevenue.toLocaleString();
         document.getElementById('d-sec-count').innerText = appData.secondarySalesCount;
+
+        // БЛОК P&L (Управленческий учет)
+        const pnlRevRounded = Math.round(appData.pnlRevenue);
+        document.getElementById('pnl-rev').innerText = pnlRevRounded.toLocaleString() + " ₽";
+
+        const pnlProfit = pnlRevRounded - appData.totalExpenses;
+        const pnlProfitEl = document.getElementById('pnl-profit');
+        pnlProfitEl.innerText = pnlProfit.toLocaleString() + " ₽";
+        pnlProfitEl.style.color = pnlProfit >= 0 ? 'var(--ok)' : 'var(--crit)';
+
+        const pnlMarginPct = pnlRevRounded > 0 ? Math.round((pnlProfit / pnlRevRounded) * 100) : 0;
+        const pnlPctEl = document.getElementById('pnl-margin-pct');
+        pnlPctEl.innerText = pnlMarginPct + "%";
+        pnlPctEl.style.color = pnlMarginPct >= 20 ? 'var(--ok)' : (pnlMarginPct >= 0 ? 'var(--warn)' : 'var(--crit)');
         
+        // ЮНИТКА И ВОРОНКА
         const totalP = appData.primarySales + appData.secondarySalesCount;
         document.getElementById('d-avg-check').innerText = (totalP > 0 ? Math.round(appData.totalRevenue / totalP) : 0).toLocaleString() + " ₽";
         document.getElementById('d-cac').innerText = (appData.primarySales > 0 ? Math.round(appData.marketingSpend / appData.primarySales) : 0).toLocaleString() + " ₽";
@@ -1304,7 +1390,7 @@
                 data: { 
                     labels: [], 
                     datasets: [{ 
-                        label: 'Выручка', data: [], borderColor: '#A68A56', 
+                        label: 'Выручка (ДДС)', data: [], borderColor: '#A68A56', 
                         backgroundColor: 'rgba(166,138,86,0.1)', fill: true, tension: 0.3 
                     }] 
                 }, options: commonOptions
@@ -1383,10 +1469,10 @@
         chatBox.scrollTop = chatBox.scrollHeight; 
 
         setTimeout(() => {
-            const marginPct = document.getElementById('d-margin-pct').innerText;
+            const marginPct = document.getElementById('pnl-margin-pct').innerText;
             const uName = localStorage.getItem('resurs_sandbox_user') || 'Собственник';
             document.getElementById(loadingId).innerHTML = `
-                ${uName}, я проанализировала тестовую базу. Текущая рентабельность составляет <b>${marginPct}</b>. В автономном режиме облачный ИИ недоступен, но цифры говорят сами за себя.`;
+                ${uName}, я проанализировала тестовую базу. Реальная рентабельность по P&L сейчас <b>${marginPct}</b>. В автономном (песочном) режиме облачный ИИ отключен, но экономику я держу на контроле.`;
             chatBox.scrollTop = chatBox.scrollHeight;
         }, 1200);
     }
